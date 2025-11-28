@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{catalog.title}">Book Catalog</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div class="container" th:if="${cartMessage}">
+    <div class="alert alert-success alert-dismissible fade show my-3" role="alert">
+        <i class="bi bi-check-circle-fill"></i>
+        <span th:text="#{alert.book_added}">Book added!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+
+<div class="container" th:if="${errorMessage}">
+    <div class="alert alert-danger alert-dismissible fade show my-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span th:text="#{alert.error}">Error</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 th:text="#{catalog.header}">Book Catalog</h2>
+
+        <div sec:authorize="hasRole('EMPLOYEE')">
+            <a href="/books/add" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> <span th:text="#{catalog.btn.add}">Add Book</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body py-2 d-flex align-items-center gap-3">
+            <span class="text-muted"><i class="bi bi-sort-down"></i> <span
+                    th:text="#{catalog.sort.label}">Sort by:</span></span>
+
+            <a th:href="@{/books(page=0, sort='name', dir=${sortField=='name' ? reverseSortDir : 'asc'})}"
+               class="text-decoration-none"
+               th:classappend="${sortField == 'name'} ? 'fw-bold text-primary' : 'text-dark'">
+                <span th:text="#{book.title}">Title</span>
+                <i th:if="${sortField=='name'}"
+                   th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+            </a>
+
+            <a th:href="@{/books(page=0, sort='price', dir=${sortField=='price' ? reverseSortDir : 'asc'})}"
+               class="text-decoration-none"
+               th:classappend="${sortField == 'price'} ? 'fw-bold text-primary' : 'text-dark'">
+                <span th:text="#{book.price}">Price</span>
+                <i th:if="${sortField=='price'}"
+                   th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+            </a>
+
+            <a th:href="@{/books(page=0, sort='author', dir=${sortField=='author' ? reverseSortDir : 'asc'})}"
+               class="text-decoration-none"
+               th:classappend="${sortField == 'author'} ? 'fw-bold text-primary' : 'text-dark'">
+                <span th:text="#{book.author}">Author</span>
+                <i th:if="${sortField=='author'}"
+                   th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+            </a>
+
+            <a th:href="@{/books(page=0, sort='publicationDate', dir=${sortField=='publicationDate' ? reverseSortDir : 'asc'})}"
+               class="text-decoration-none"
+               th:classappend="${sortField == 'publicationDate'} ? 'fw-bold text-primary' : 'text-dark'">
+                <span th:text="#{book.year}">Year</span>
+                <i th:if="${sortField=='publicationDate'}"
+                   th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col" th:each="book : ${books.content}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-secondary text-white text-center py-4">
+                    <h4 class="mb-0" th:text="${book.genre}">Genre</h4>
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title" th:text="${book.name}">Book Title</h5>
+                    <p class="card-text text-muted mb-1"><span th:text="#{book.author}">Author</span>: <span
+                            th:text="${book.author}">Author Name</span></p>
+
+                    <p class="card-text text-muted"><span th:text="#{book.year}">Year</span>: <span
+                            th:text="${#temporals.year(book.publicationDate)}">2020</span></p>
+
+                    <h4 class="mt-auto text-primary" th:text="${book.price} + ' $'">10.00 $</h4>
+                </div>
+
+                <div class="card-footer bg-white border-top-0 pt-0">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+
+                        <a th:href="@{/books/{name}(name=${book.name})}"
+                           class="btn btn-outline-primary flex-grow-1" th:text="#{btn.details}">Details</a>
+
+                        <form sec:authorize="hasRole('CLIENT')" th:action="@{/cart/add}" method="post"
+                              class="flex-grow-1">
+                            <input type="hidden" name="bookName" th:value="${book.name}">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-cart-plus"></i> <span th:text="#{btn.add_cart}">Add</span>
+                            </button>
+                        </form>
+
+                        <div sec:authorize="hasRole('EMPLOYEE')" class="btn-group" role="group">
+                            <a th:href="@{/books/edit/{name}(name=${book.name})}"
+                               class="btn btn-outline-warning text-dark"><i class="bi bi-pencil-square"></i></a>
+
+                            <form th:action="@{/books/delete/{name}(name=${book.name})}" method="post"
+                                  th:data-confirm="#{confirm.delete}"
+                                  onclick="return confirm(this.getAttribute('data-confirm'))">
+                                <button type="submit" class="btn btn-outline-danger"
+                                        style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center py-4" th:if="${totalPages > 1}">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/books(page=${currentPage - 1}, sort=${sortField}, dir=${sortDir})}">&laquo;</a>
+                </li>
+
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:classappend="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/books(page=${i}, sort=${sortField}, dir=${sortDir})}"
+                       th:text="${i + 1}">1</a>
+                </li>
+
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/books(page=${currentPage + 1}, sort=${sortField}, dir=${sortDir})}">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

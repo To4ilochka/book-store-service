@@ -1,5 +1,148 @@
 package com.epam.rd.autocode.spring.project.service.impl;
 
-public class ClientServiceImpl{
-    //TODO Place your code here
+import com.epam.rd.autocode.spring.project.dto.ClientDTO;
+import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
+import com.epam.rd.autocode.spring.project.exception.NotFoundException;
+import com.epam.rd.autocode.spring.project.model.BlockedClient;
+import com.epam.rd.autocode.spring.project.model.Client;
+import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
+import com.epam.rd.autocode.spring.project.repo.ClientRepository;
+import com.epam.rd.autocode.spring.project.service.ClientService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ClientServiceImpl implements ClientService {
+    private final ClientRepository clientRepository;
+    private final ModelMapper modelMapper;
+    private final BlockedClientRepository blockedClientRepository;
+
+    @Override
+    public Page<ClientDTO> getAllClients(int page, int size, String sortField, String sortDir) {
+        log.debug("Fetching clients page: {}, Sort: {} {}", page, sortField, sortDir);
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        Page<Client> resultPage;
+
+        if ("status".equals(sortField)) {
+            Pageable pageable = PageRequest.of(page, size);
+            if (direction == Sort.Direction.DESC) {
+                resultPage = clientRepository.findAllOrderByStatusDesc(pageable);
+            } else {
+                resultPage = clientRepository.findAllOrderByStatusAsc(pageable);
+            }
+        } else {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+            resultPage = clientRepository.findAll(pageable);
+        }
+
+        return resultPage.map(client -> modelMapper.map(client, ClientDTO.class));
+    }
+
+    @Override
+    public ClientDTO getClientByEmail(String email) {
+        log.debug("Fetching client profile: {}", email);
+        return modelMapper.map(clientRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("Client not found: {}", email);
+                    return new NotFoundException("Client not found with email: " + email);
+                }), ClientDTO.class);
+    }
+
+    @Transactional
+    @Override
+    public ClientDTO updateClientByEmail(String email, ClientDTO client) {
+        log.info("Updating client profile: {}", email);
+        Client clientByEmail = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Cannot update. Client not found with email: " + email));
+        modelMapper.map(client, clientByEmail);
+
+        Client saved = clientRepository.save(clientByEmail);
+        log.info("Client profile updated successfully: {}", email);
+        return modelMapper.map(saved, ClientDTO.class);
+    }
+
+    @Transactional
+    @Override
+    public void deleteClientByEmail(String email) {
+        log.warn("Attempting to delete client: {}", email);
+        if (!clientRepository.existsByEmail(email)) {
+            log.error("Delete failed. Client not found: {}", email);
+            throw new NotFoundException("Cannot delete. Client not found with email: " + email);
+        }
+        clientRepository.deleteByEmail(email);
+        log.info("Client deleted: {}", email);
+    }
+
+    @Transactional
+    @Override
+    public ClientDTO addClient(ClientDTO client) {
+        log.info("Registering new client: {}", client.getEmail());
+        if (clientRepository.existsByEmail(client.getEmail())) {
+            log.error("Registration failed. Email exists: {}", client.getEmail());
+            throw new AlreadyExistException("User with email '" + client.getEmail() + "' already exists");
+        }
+        Client saved = clientRepository.save(modelMapper.map(client, Client.class));
+        log.info("Client registered successfully: {}", saved.getEmail());
+        return modelMapper.map(saved, ClientDTO.class);
+    }
+
+    @Transactional
+    @Override
+    public void blockClient(String email) {
+        if (!blockedClientRepository.existsByEmail(email)) {
+            log.warn("Blocking client: {}", email);
+            blockedClientRepository.save(new BlockedClient(email));
+        } else {
+            log.debug("Client already blocked: {}", email);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void unblockClient(String email) {
+        log.info("Unblocking client: {}", email);
+        blockedClientRepository.deleteByEmail(email);
+    }
+
+    @Override
+    public List<String> getBlockedEmails() {
+        return blockedClientRepository.findAll().stream()
+                .map(BlockedClient::getEmail)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public void topUpBalance(String email, BigDecimal amount) {
+        log.info("Top-up request for '{}'. Amount: {}", email, amount);
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            log.error("Top-up failed. Invalid amount: {}", amount);
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Client not found"));
+
+        client.setBalance(client.getBalance().add(amount));
+        clientRepository.save(client);
+        log.info("Balance updated for '{}'. New balance: {}", email, client.getBalance());
+    }
+
+    @Override
+    public boolean clientExists(String email) {
+        return clientRepository.existsByEmail(email);
+    }
 }

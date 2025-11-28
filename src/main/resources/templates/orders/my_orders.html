@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{orders.my.title}">My Orders</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div class="container">
+    <h2 class="mb-4"><i class="bi bi-clock-history"></i> <span th:text="#{orders.my.header}">My Order History</span>
+    </h2>
+
+    <div th:if="${orders.isEmpty()}" class="text-center py-5">
+        <h3 class="text-muted" th:text="#{orders.my.empty}">You haven't placed any orders yet.</h3>
+        <a href="/books" class="btn btn-primary mt-3" th:text="#{home.btn.catalog}">Go to Catalog</a>
+    </div>
+
+    <div th:unless="${orders.isEmpty()}" class="row">
+        <div class="col-md-10 mx-auto">
+
+            <div th:each="order : ${orders}" class="card shadow-sm mb-4">
+
+                <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                    <div class="d-flex align-items-center gap-3">
+
+                        <div>
+                            <strong class="text-secondary" th:text="#{orders.date} + ':'">Date:</strong>
+                            <span th:text="${#temporals.format(order.orderDate, 'dd-MM-yyyy HH:mm')}">Date</span>
+                        </div>
+
+                        <span th:if="${order.employeeEmail == null}" class="badge bg-warning text-dark">
+                            <i class="bi bi-hourglass-split"></i> <span
+                                th:text="#{orders.status.processing}">Processing</span>
+                        </span>
+
+                        <span th:if="${order.employeeEmail != null}" class="badge bg-success">
+                            <i class="bi bi-check2-all"></i> <span th:text="#{orders.status.confirmed}">Confirmed</span>
+                        </span>
+
+                    </div>
+
+                    <div>
+                        <span class="badge bg-light text-dark border fs-6">
+                            <span th:text="#{cart.total} + ':'">Total:</span> <strong th:text="${order.price} + ' $'">0.00 $</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" th:text="#{orders.item.title}">Book Title</th>
+                            <th class="text-end pe-4" th:text="#{orders.item.qty}">Quantity</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item : ${order.bookItems}">
+                            <td class="ps-4" th:text="${item.bookName}">Harry Potter</td>
+                            <td class="text-end pe-4">
+                                    <span class="badge bg-secondary rounded-pill"
+                                          th:text="'x' + ${item.quantity}">x1</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

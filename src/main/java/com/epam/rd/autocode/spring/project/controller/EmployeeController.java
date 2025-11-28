@@ -1,5 +1,87 @@
 package com.epam.rd.autocode.spring.project.controller;
 
+import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
+import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
+import com.epam.rd.autocode.spring.project.service.ClientService;
+import com.epam.rd.autocode.spring.project.service.EmployeeService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+
+@Slf4j
+@Controller
+@RequestMapping("/employees")
+@RequiredArgsConstructor
 public class EmployeeController {
-    // TODO Place your code here
+    private final EmployeeService employeeService;
+    private final ClientService clientService;
+
+    @GetMapping
+    public String getAllEmployees(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "10") int size,
+                                  @RequestParam(defaultValue = "id") String sort,
+                                  @RequestParam(defaultValue = "asc") String dir,
+                                  Model model) {
+        log.debug("Requesting employee list. Page: {}, Sort: {}", page, sort);
+        Sort.Direction direction = dir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+        Page<EmployeeDTO> employeesPage = employeeService.getAllEmployees(pageable);
+        model.addAttribute("employees", employeesPage);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", employeesPage.getTotalPages());
+        model.addAttribute("sortField", sort);
+        model.addAttribute("sortDir", dir);
+        model.addAttribute("reverseSortDir", dir.equals("asc") ? "desc" : "asc");
+        return "employee/list";
+    }
+
+    @GetMapping("/add")
+    public String addEmployeeForm(Model model) {
+        model.addAttribute("employee", new EmployeeDTO());
+        return "employee/add";
+    }
+
+    @PostMapping("/add")
+    public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employeeDTO,
+                              BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return "employee/add";
+        }
+
+        if (clientService.clientExists(employeeDTO.getEmail())) {
+            bindingResult.rejectValue("email", "error.employee", "Email is already registered as a Client");
+            return "employee/add";
+        }
+
+        try {
+            employeeService.addEmployee(employeeDTO);
+            log.info("New employee registered: {}", employeeDTO.getEmail());
+        } catch (AlreadyExistException e) {
+            bindingResult.rejectValue("email", "error.employee", "Email already exists in Employee DB");
+            return "employee/add";
+        }
+
+        return "redirect:/employees";
+    }
+
+    @PostMapping("/delete")
+    public String deleteEmployee(@RequestParam("email") String email, Principal principal) {
+        if (principal.getName().equals(email)) {
+            log.warn("SECURITY WARN: User {} tried to delete themselves!", email);
+            return "redirect:/employees?error=self_delete";
+        }
+        log.info("Admin {} deleted employee {}", principal.getName(), email);
+        employeeService.deleteEmployeeByEmail(email);
+        return "redirect:/employees";
+    }
 }

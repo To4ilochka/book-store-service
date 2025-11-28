@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{auth.login.title}">Sign In</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .card-login {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card-login">
+    <div class="text-center mb-4">
+        <h3 th:text="#{auth.login.title}">Sign In</h3>
+        <p class="text-muted" th:text="#{auth.login.subtitle}">Book Store Service</p>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success text-center" role="alert">
+        <span th:text="${successMessage}">Success message</span>
+    </div>
+
+    <div th:if="${param.blocked}" class="alert alert-danger text-center" role="alert">
+        <i class="bi bi-lock-fill"></i> <span th:text="#{auth.blocked}">Your account has been blocked.</span>
+    </div>
+
+    <div th:if="${param.error}" class="alert alert-danger text-center" role="alert">
+        <span th:text="#{auth.error}">Invalid email or password.</span>
+    </div>
+
+    <div th:if="${param.logout}" class="alert alert-info text-center" role="alert">
+        <span th:text="#{auth.logout}">You have been logged out successfully.</span>
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="mb-3">
+            <label for="username" class="form-label" th:text="#{auth.email}">Email</label>
+            <input type="email" class="form-control" id="username" name="username"
+                   placeholder="name@example.com" required autofocus>
+        </div>
+
+        <div class="mb-3">
+            <label for="password" class="form-label" th:text="#{auth.password}">Password</label>
+            <input type="password" class="form-control" id="password" name="password"
+                   th:placeholder="#{auth.password.placeholder}" required>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg" th:text="#{auth.btn.signin}">Sign In</button>
+        </div>
+    </form>
+
+    <div class="text-center mt-3">
+        <p class="mb-0">
+            <span th:text="#{auth.no_account}">Don't have an account?</span>
+            <a href="/register" class="text-decoration-none" th:text="#{auth.signup.link}">Sign Up</a>
+        </p>
+        <p class="mt-2">
+            <a href="/" class="text-secondary text-decoration-none">
+                &larr; <span th:text="#{auth.back_home}">Back to Home</span>
+            </a>
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

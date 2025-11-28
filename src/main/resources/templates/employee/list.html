@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{emp.list.title}">Manage Employees</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .sort-header {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-header:hover {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 th:text="#{emp.list.header}">Employee Management</h2>
+        <a href="/employees/add" class="btn btn-success">
+            <i class="bi bi-person-plus-fill"></i> <span th:text="#{emp.list.btn.add}">Add New Employee</span>
+        </a>
+    </div>
+
+    <div th:if="${param.error}" class="alert alert-danger" th:text="#{emp.list.error.self_delete}">
+        Action failed. You cannot delete your own account.
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">
+                        <a class="sort-header"
+                           th:href="@{/employees(page=0, sort='name', dir=${sortField=='name' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.name}">Name</span> <i th:if="${sortField=='name'}"
+                                                                         th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header"
+                           th:href="@{/employees(page=0, sort='email', dir=${sortField=='email' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.email}">Email</span> <i th:if="${sortField=='email'}"
+                                                                           th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header"
+                           th:href="@{/employees(page=0, sort='phone', dir=${sortField=='phone' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.phone}">Phone</span> <i th:if="${sortField=='phone'}"
+                                                                           th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header"
+                           th:href="@{/employees(page=0, sort='birthDate', dir=${sortField=='birthDate' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.birth_date}">Birth Date</span> <i th:if="${sortField=='birthDate'}"
+                                                                                     th:class="${sortDir=='asc' ? 'bi bi-caret-down-fill' : 'bi bi-caret-up-fill'}"></i>
+                        </a>
+                    </th>
+
+                    <th class="text-end pe-4" th:text="#{table.actions}">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="emp : ${employees.content}">
+                    <td class="ps-4 fw-bold" th:text="${emp.name}">Name</td>
+                    <td th:text="${emp.email}">Email</td>
+                    <td th:text="${emp.phone}">Phone</td>
+                    <td th:text="${emp.birthDate}">Date</td>
+                    <td class="text-end pe-4">
+                        <form th:action="@{/employees/delete}" method="post" style="display:inline;">
+                            <input type="hidden" name="email" th:value="${emp.email}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    th:data-confirm="#{emp.confirm.fire}"
+                                    onclick="return confirm(this.getAttribute('data-confirm'))">
+                                <i class="bi bi-trash"></i> <span th:text="#{btn.delete}">Delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-center py-3" th:if="${totalPages > 1}">
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/employees(page=${currentPage - 1}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="#{nav.prev}">Previous</a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/employees(page=${i}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/employees(page=${currentPage + 1}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="#{nav.next}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

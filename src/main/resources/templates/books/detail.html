@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{detail.title} + ': ' + ${book.name}">Book Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div th:if="${cartMessage}" class="alert alert-success alert-dismissible fade show my-3" role="alert">
+    <i class="bi bi-check-circle-fill"></i>
+    <span th:text="${cartMessage}">Book added!</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show my-3" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span th:text="${errorMessage}">Error message placeholder</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<div class="container">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center border-end">
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center mb-3"
+                         style="height: 300px; border-radius: 5px;">
+                        <div>
+                            <h3 th:text="${book.genre}">Genre</h3>
+                        </div>
+                    </div>
+                    <h4 class="text-primary" th:text="${book.price} + ' $'">Price</h4>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <form sec:authorize="hasRole('CLIENT')" th:action="@{/cart/add}" method="post">
+                            <input type="hidden" name="bookName" th:value="${book.name}">
+                            <button type="submit" class="btn btn-primary w-100 btn-lg" th:text="#{btn.add_cart_long}">
+                                Add to Cart
+                            </button>
+                        </form>
+
+                        <a sec:authorize="hasRole('EMPLOYEE')"
+                           th:href="@{/books/edit/{name}(name=${book.name})}"
+                           class="btn btn-warning" th:text="#{btn.edit}">Edit Book</a>
+                    </div>
+                </div>
+
+                <div class="col-md-8 p-4">
+                    <h1 class="mb-3" th:text="${book.name}">Title</h1>
+                    <h4 class="text-muted mb-4"><span th:text="#{book.author}">Author</span>: <span
+                            th:text="${book.author}">Author</span></h4>
+
+                    <h5 class="border-bottom pb-2" th:text="#{book.description}">Description</h5>
+                    <p class="lead" th:text="${book.description}">Description...</p>
+
+                    <div class="row mt-5">
+                        <h5 class="border-bottom pb-2" th:text="#{detail.section.details}">Details</h5>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent">
+                                    <strong th:text="#{book.pages} + ':'">Pages:</strong> <span th:text="${book.pages}">0</span>
+                                </li>
+
+                                <li class="list-group-item bg-transparent">
+                                    <strong th:text="#{book.published} + ':'">Published:</strong> <span
+                                        th:text="${book.publicationDate}">2020-01-01</span>
+                                </li>
+
+                                <li class="list-group-item bg-transparent">
+                                    <strong th:text="#{book.language} + ':'">Language:</strong> <span
+                                        th:text="${book.language}">EN</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent">
+                                    <strong th:text="#{book.age_group} + ':'">Age Group:</strong> <span
+                                        th:text="${book.ageGroup}">ADULT</span>
+                                </li>
+                                <li class="list-group-item bg-transparent">
+                                    <strong th:text="#{book.characteristics} + ':'">Characteristics:</strong> <span
+                                        th:text="${book.characteristics}">None</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

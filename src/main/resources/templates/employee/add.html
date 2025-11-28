@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{emp.add.title}">Add Employee</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0" th:text="#{emp.add.header}">Hire New Employee</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/employees/add}" th:object="${employee}" method="post">
+
+                        <div class="mb-3">
+                            <label class="form-label" th:text="#{field.full_name}">Full Name</label>
+                            <input type="text" class="form-control" th:field="*{name}"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" th:text="#{field.email}">Email</label>
+                            <input type="email" class="form-control" th:field="*{email}"
+                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" th:text="#{field.password}">Password</label>
+                            <input type="password" class="form-control" th:field="*{password}"
+                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}"
+                                 th:errors="*{password}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" th:text="#{field.phone}">Phone</label>
+                            <input type="text" class="form-control" th:field="*{phone}" placeholder="000-000-0000"
+                                   th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" th:text="#{field.birth_date}">Birth Date</label>
+                            <input type="date" class="form-control" th:field="*{birthDate}"
+                                   th:classappend="${#fields.hasErrors('birthDate')} ? 'is-invalid'" required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('birthDate')}"
+                                 th:errors="*{birthDate}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success" th:text="#{btn.save}">Save</button>
+                            <a href="/employees" class="btn btn-secondary" th:text="#{btn.cancel}">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

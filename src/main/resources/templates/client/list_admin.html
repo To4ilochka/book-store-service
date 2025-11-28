@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{client.list.title}">Manage Clients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .sort-header {
+            color: black;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-header:hover {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div class="container">
+    <h2 class="mb-4" th:text="#{client.list.header}">Client Management</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">
+                        <a class="sort-header"
+                           th:href="@{/clients(page=0, size=${clients.size}, sort='name', dir=${sortField == 'name' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.name}">Name</span>
+                            <span th:if="${sortField == 'name'}">
+                                <i th:if="${sortDir == 'asc'}" class="bi bi-sort-alpha-down"></i>
+                                <i th:if="${sortDir == 'desc'}" class="bi bi-sort-alpha-down-alt"></i>
+                            </span>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header"
+                           th:href="@{/clients(page=0, size=${clients.size}, sort='email', dir=${sortField == 'email' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.email}">Email</span>
+                            <span th:if="${sortField == 'email'}">
+                                <i th:if="${sortDir == 'asc'}" class="bi bi-sort-alpha-down"></i>
+                                <i th:if="${sortDir == 'desc'}" class="bi bi-sort-alpha-down-alt"></i>
+                            </span>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header"
+                           th:href="@{/clients(page=0, size=${clients.size}, sort='balance', dir=${sortField == 'balance' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{client.field.balance}">Balance</span>
+                            <span th:if="${sortField == 'balance'}">
+                                <i th:if="${sortDir == 'asc'}" class="bi bi-sort-numeric-down"></i>
+                                <i th:if="${sortDir == 'desc'}" class="bi bi-sort-numeric-down-alt"></i>
+                            </span>
+                        </a>
+                    </th>
+
+                    <th class="text-end pe-4">
+                        <a class="sort-header justify-content-end"
+                           th:href="@{/clients(page=0, size=${clients.size}, sort='status', dir=${sortField == 'status' ? reverseSortDir : 'asc'})}">
+                            <span th:text="#{field.status_actions}">Status / Actions</span>
+                            <span th:if="${sortField == 'status'}">
+                                <i th:if="${sortDir == 'desc'}" class="bi bi-sort-down"></i> <i
+                                    th:if="${sortDir == 'asc'}" class="bi bi-sort-up"></i>   </span>
+                        </a>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="client : ${clients.content}">
+                    <td class="ps-4 fw-bold" th:text="${client.name}">Name</td>
+                    <td th:text="${client.email}">Email</td>
+                    <td class="text-success fw-bold" th:text="${client.balance} + ' $'">0.00 $</td>
+
+                    <td class="text-end pe-4">
+                        <div th:if="${#lists.contains(blockedEmails, client.email)}">
+                            <span class="badge bg-danger me-2" th:text="#{status.blocked}">Blocked</span>
+
+                            <form th:action="@{/clients/unblock}" method="post" style="display:inline;">
+                                <input type="hidden" name="email" th:value="${client.email}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-unlock"></i> <span th:text="#{btn.unblock}">Unblock</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div th:unless="${#lists.contains(blockedEmails, client.email)}">
+                            <span class="badge bg-success me-2" th:text="#{status.active}">Active</span>
+
+                            <form th:action="@{/clients/block}" method="post" style="display:inline;">
+                                <input type="hidden" name="email" th:value="${client.email}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        th:data-confirm="#{client.confirm.block}"
+                                        onclick="return confirm(this.getAttribute('data-confirm'))">
+                                    <i class="bi bi-lock"></i> <span th:text="#{btn.block}">Block</span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-footer bg-white d-flex justify-content-center py-3" th:if="${totalPages > 1}">
+            <nav aria-label="Page navigation">
+                <ul class="pagination mb-0">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/clients(page=${currentPage - 1}, size=${clients.size}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="#{nav.prev}">Previous</a>
+                    </li>
+
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/clients(page=${i}, size=${clients.size}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+
+                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/clients(page=${currentPage + 1}, size=${clients.size}, sort=${sortField}, dir=${sortDir})}"
+                           th:text="#{nav.next}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,12 +1,12 @@
 package com.epam.rd.autocode.spring.project.service;
 
 import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface EmployeeService {
 
-    List<EmployeeDTO> getAllEmployees();
+    Page<EmployeeDTO> getAllEmployees(Pageable pageable);
 
     EmployeeDTO getEmployeeByEmail(String email);
 
@@ -15,4 +15,6 @@ public interface EmployeeService {
     void deleteEmployeeByEmail(String email);
 
     EmployeeDTO addEmployee(EmployeeDTO employee);
+
+    boolean employeeExists(String email);
 }

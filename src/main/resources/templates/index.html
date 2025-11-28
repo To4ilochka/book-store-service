@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{home.title}">Book Store - Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background-color: #e9ecef;
+            padding: 4rem 2rem;
+            border-radius: 0.3rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: header}"></div>
+
+<div class="container">
+    <div class="hero-section text-center">
+        <h1 class="display-4" th:text="#{home.welcome}">Welcome to Book Store!</h1>
+        <p class="lead" th:text="#{home.description}">The best place to buy books.</p>
+        <hr class="my-4">
+
+        <div sec:authorize="isAnonymous()">
+            <p th:text="#{home.guest_text}">Register to start shopping.</p>
+            <a class="btn btn-primary btn-lg" href="/register" role="button" th:text="#{home.btn.register}">Register</a>
+            <a class="btn btn-outline-secondary btn-lg" href="/login" role="button" th:text="#{home.btn.signin}">Sign
+                In</a>
+        </div>
+
+        <div sec:authorize="isAuthenticated()">
+            <p th:text="#{home.user_text}">We are glad to see you again!</p>
+            <a class="btn btn-success btn-lg" href="/books" role="button" th:text="#{home.btn.catalog}">Go to
+                Catalog</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
