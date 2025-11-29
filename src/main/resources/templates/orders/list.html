@@ -69,14 +69,13 @@
                     <td class="ps-4" th:text="${#temporals.format(order.orderDate, 'dd-MM-yyyy HH:mm')}">Date</td>
 
                     <td>
-                        <div th:text="${order.client.name}">Client Name</div>
-                        <small class="text-muted" th:text="${order.client.email}">email</small>
+                        <div class="fw-bold" th:text="${order.clientEmail}">client@email.com</div>
                     </td>
 
                     <td class="fw-bold" th:text="${order.price} + ' $'">Price</td>
 
                     <td>
-                        <div th:if="${order.employee == null}">
+                        <div th:if="${order.employeeEmail == null}">
                             <form th:action="@{/orders/{id}/confirm(id=${order.id})}" method="post">
                                 <button type="submit" class="btn btn-sm btn-primary">
                                     <i class="bi bi-check-circle"></i> <span
@@ -85,11 +84,11 @@
                             </form>
                         </div>
 
-                        <div th:if="${order.employee != null}">
+                        <div th:if="${order.employeeEmail != null}">
                             <span class="badge bg-success">
                                 <i class="bi bi-person-check"></i>
                                 <span th:text="#{orders.processed_by}">Processed by</span> <span
-                                    th:text="${order.employee.name}">Name</span>
+                                    th:text="${order.employeeEmail}">emp@email.com</span>
                             </span>
                         </div>
                     </td>

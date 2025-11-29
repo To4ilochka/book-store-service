@@ -50,12 +50,14 @@ class OrderServiceImplTest {
         String sortField = "id";
         String sortDir = "asc";
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, sortField));
-        Page<Order> orderPage = new PageImpl<>(List.of(new Order()));
+        Order order = new Order();
+        Page<Order> orderPage = new PageImpl<>(List.of(order));
+        OrderDTO orderDTO = new OrderDTO();
 
         when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
+        when(modelMapper.map(order, OrderDTO.class)).thenReturn(orderDTO);
 
-        Page<Order> result = orderService.getAllOrders(page, size, sortField, sortDir);
+        Page<OrderDTO> result = orderService.getAllOrders(page, size, sortField, sortDir);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
@@ -69,10 +71,14 @@ class OrderServiceImplTest {
         String sortField = "employee";
         String sortDir = "asc";
 
-        Page<Order> orderPage = new PageImpl<>(List.of(new Order()));
-        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
+        Order order = new Order();
+        Page<Order> orderPage = new PageImpl<>(List.of(order));
+        OrderDTO orderDTO = new OrderDTO();
 
-        Page<Order> result = orderService.getAllOrders(page, size, sortField, sortDir);
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
+        when(modelMapper.map(order, OrderDTO.class)).thenReturn(orderDTO);
+
+        Page<OrderDTO> result = orderService.getAllOrders(page, size, sortField, sortDir);
 
         assertNotNull(result);
         verify(orderRepository).findAll(any(Pageable.class));

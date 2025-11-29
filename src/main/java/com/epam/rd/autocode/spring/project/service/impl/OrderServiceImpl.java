@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,19 +37,19 @@ public class OrderServiceImpl implements OrderService {
     private final ModelMapper modelMapper;
 
     @Override
-    public Page<Order> getAllOrders(int page, int size, String sortField, String sortDir) {
+    public Page<OrderDTO> getAllOrders(int page, int size, String sortField, String sortDir) {
         log.debug("Fetching orders page: {}", page);
         Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         Sort.Order order;
-
         if ("employee".equals(sortField)) {
             order = new Sort.Order(direction, "employee").nullsFirst();
         } else {
             order = new Sort.Order(direction, sortField);
         }
 
-        return orderRepository.findAll(PageRequest.of(page, size, Sort.by(order)));
+        return orderRepository.findAll(PageRequest.of(page, size, Sort.by(order)))
+                .map(entity -> modelMapper.map(entity, OrderDTO.class));
     }
 
     @Override

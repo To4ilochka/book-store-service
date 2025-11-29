@@ -3,14 +3,15 @@ package com.epam.rd.autocode.spring.project.controller;
 import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.dto.BookItemDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
-import com.epam.rd.autocode.spring.project.model.Order;
 import com.epam.rd.autocode.spring.project.service.CartService;
 import com.epam.rd.autocode.spring.project.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -36,7 +37,7 @@ public class OrderController {
 
         log.debug("Fetching all orders. Page: {}, Sort: {}", page, sort);
 
-        Page<Order> orderPage = orderService.getAllOrders(page, size, sort, dir);
+        Page<OrderDTO> orderPage = orderService.getAllOrders(page, size, sort, dir);
 
         model.addAttribute("orders", orderPage);
         model.addAttribute("currentPage", page);
@@ -92,11 +93,6 @@ public class OrderController {
         model.addAttribute("orders", myOrders);
 
         return "orders/my_orders";
-    }
-
-    @GetMapping("/orders")
-    public String getAllOrders() {
-        return "orders/list";
     }
 
     @PostMapping("/{id}/confirm")
