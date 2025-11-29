@@ -21,4 +21,5 @@ public class ClientDTO {
     private String name;
     @PositiveOrZero(message = "Balance cannot be negative")
     private BigDecimal balance;
+    private boolean isBlocked;
 }

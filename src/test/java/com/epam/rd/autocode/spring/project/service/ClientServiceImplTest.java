@@ -3,9 +3,7 @@ package com.epam.rd.autocode.spring.project.service;
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
 import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
-import com.epam.rd.autocode.spring.project.model.BlockedClient;
 import com.epam.rd.autocode.spring.project.model.Client;
-import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.service.impl.ClientServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -32,9 +30,6 @@ class ClientServiceImplTest {
 
     @Mock
     private ModelMapper modelMapper;
-
-    @Mock
-    private BlockedClientRepository blockedClientRepository;
 
     @InjectMocks
     private ClientServiceImpl clientService;
@@ -63,24 +58,25 @@ class ClientServiceImplTest {
     }
 
     @Test
-    void getAllClients_ShouldSortByStatusDesc() {
+    void getAllClients_ShouldSortByIsBlocked_WhenStatusRequested() {
         int page = 0;
         int size = 5;
         String sortField = "status";
         String sortDir = "desc";
-        Pageable pageable = PageRequest.of(page, size);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "isBlocked"));
 
         Client client = new Client();
         Page<Client> clientPage = new PageImpl<>(List.of(client));
         ClientDTO clientDTO = new ClientDTO();
 
-        when(clientRepository.findAllOrderByStatusDesc(pageable)).thenReturn(clientPage);
+        when(clientRepository.findAll(pageable)).thenReturn(clientPage);
         when(modelMapper.map(client, ClientDTO.class)).thenReturn(clientDTO);
 
         Page<ClientDTO> result = clientService.getAllClients(page, size, sortField, sortDir);
 
         assertNotNull(result);
-        verify(clientRepository).findAllOrderByStatusDesc(pageable);
+        verify(clientRepository).findAll(pageable);
     }
 
     @Test
@@ -113,6 +109,8 @@ class ClientServiceImplTest {
         dto.setEmail("new@test.com");
         Client client = new Client();
         client.setEmail("new@test.com");
+        client.setBlocked(false);
+        client.setBalance(BigDecimal.ZERO);
 
         when(clientRepository.existsByEmail(dto.getEmail())).thenReturn(false);
         when(modelMapper.map(dto, Client.class)).thenReturn(client);
@@ -143,7 +141,6 @@ class ClientServiceImplTest {
 
         Client existingClient = new Client();
         existingClient.setEmail(email);
-        existingClient.setName("Old Name");
 
         Client updatedClient = new Client();
         updatedClient.setEmail(email);
@@ -191,42 +188,56 @@ class ClientServiceImplTest {
     }
 
     @Test
-    void blockClient_ShouldSaveBlockedClient_WhenNotBlocked() {
+    void blockClient_ShouldSetBlockedTrue_WhenClientExists() {
         String email = "bad@test.com";
-        when(blockedClientRepository.existsByEmail(email)).thenReturn(false);
+        Client client = new Client();
+        client.setEmail(email);
+        client.setBlocked(false);
+
+        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
 
         clientService.blockClient(email);
 
-        verify(blockedClientRepository).save(any(BlockedClient.class));
+        assertTrue(client.isBlocked());
+        verify(clientRepository).save(client);
     }
 
     @Test
-    void blockClient_ShouldDoNothing_WhenAlreadyBlocked() {
-        String email = "blocked@test.com";
-        when(blockedClientRepository.existsByEmail(email)).thenReturn(true);
+    void blockClient_ShouldThrowNotFound_WhenClientMissing() {
+        String email = "ghost@test.com";
+        when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        clientService.blockClient(email);
-
-        verify(blockedClientRepository, never()).save(any());
+        assertThrows(NotFoundException.class, () -> clientService.blockClient(email));
+        verify(clientRepository, never()).save(any());
     }
 
     @Test
-    void unblockClient_ShouldDeleteFromBlocked() {
+    void unblockClient_ShouldSetBlockedFalse_WhenClientExists() {
         String email = "ok@test.com";
+        Client client = new Client();
+        client.setEmail(email);
+        client.setBlocked(true);
+
+        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+
         clientService.unblockClient(email);
-        verify(blockedClientRepository).deleteByEmail(email);
+
+        assertFalse(client.isBlocked());
+        verify(clientRepository).save(client);
     }
 
     @Test
-    void getBlockedEmails_ShouldReturnList() {
-        BlockedClient b1 = new BlockedClient("a@t.com");
-        BlockedClient b2 = new BlockedClient("b@t.com");
-        when(blockedClientRepository.findAll()).thenReturn(List.of(b1, b2));
+    void getBlockedEmails_ShouldReturnOnlyBlockedClients() {
+        Client c1 = new Client(); c1.setEmail("blocked@t.com"); c1.setBlocked(true);
+        Client c2 = new Client(); c2.setEmail("active@t.com"); c2.setBlocked(false);
+
+        when(clientRepository.findAll()).thenReturn(List.of(c1, c2));
 
         List<String> result = clientService.getBlockedEmails();
 
-        assertEquals(2, result.size());
-        assertTrue(result.contains("a@t.com"));
+        assertEquals(1, result.size());
+        assertTrue(result.contains("blocked@t.com"));
+        assertFalse(result.contains("active@t.com"));
     }
 
     @Test

@@ -3,9 +3,7 @@ package com.epam.rd.autocode.spring.project.service.impl;
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
 import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
-import com.epam.rd.autocode.spring.project.model.BlockedClient;
 import com.epam.rd.autocode.spring.project.model.Client;
-import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.service.ClientService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,28 +24,17 @@ import java.util.List;
 public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
     private final ModelMapper modelMapper;
-    private final BlockedClientRepository blockedClientRepository;
 
     @Override
     public Page<ClientDTO> getAllClients(int page, int size, String sortField, String sortDir) {
         log.debug("Fetching clients page: {}, Sort: {} {}", page, sortField, sortDir);
+
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Page<Client> resultPage;
+        String actualSortField = "status".equals(sortField) ? "isBlocked" : sortField;
 
-        if ("status".equals(sortField)) {
-            Pageable pageable = PageRequest.of(page, size);
-            if (direction == Sort.Direction.DESC) {
-                resultPage = clientRepository.findAllOrderByStatusDesc(pageable);
-            } else {
-                resultPage = clientRepository.findAllOrderByStatusAsc(pageable);
-            }
-        } else {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
-            resultPage = clientRepository.findAll(pageable);
-        }
-
-        return resultPage.map(client -> modelMapper.map(client, ClientDTO.class));
+        return clientRepository.findAll(PageRequest.of(page, size, Sort.by(direction, actualSortField)))
+                .map(client -> modelMapper.map(client, ClientDTO.class));
     }
 
     @Override
@@ -102,25 +88,30 @@ public class ClientServiceImpl implements ClientService {
     @Transactional
     @Override
     public void blockClient(String email) {
-        if (!blockedClientRepository.existsByEmail(email)) {
-            log.warn("Blocking client: {}", email);
-            blockedClientRepository.save(new BlockedClient(email));
-        } else {
-            log.debug("Client already blocked: {}", email);
-        }
+        log.info("Blocking client: {}", email);
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Client not found: " + email));
+
+        client.setBlocked(true);
+        clientRepository.save(client);
     }
 
     @Transactional
     @Override
     public void unblockClient(String email) {
         log.info("Unblocking client: {}", email);
-        blockedClientRepository.deleteByEmail(email);
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Client not found: " + email));
+
+        client.setBlocked(false);
+        clientRepository.save(client);
     }
 
     @Override
     public List<String> getBlockedEmails() {
-        return blockedClientRepository.findAll().stream()
-                .map(BlockedClient::getEmail)
+        return clientRepository.findAll().stream()
+                .filter(Client::isBlocked)
+                .map(Client::getEmail)
                 .toList();
     }
 

@@ -2,7 +2,6 @@ package com.epam.rd.autocode.spring.project.service;
 
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.model.Employee;
-import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
 import com.epam.rd.autocode.spring.project.service.impl.CustomUserDetailsServiceImpl;
@@ -26,8 +25,6 @@ class CustomUserDetailsServiceImplTest {
     private ClientRepository clientRepository;
     @Mock
     private EmployeeRepository employeeRepository;
-    @Mock
-    private BlockedClientRepository blockedClientRepository;
 
     @InjectMocks
     private CustomUserDetailsServiceImpl userDetailsService;
@@ -39,9 +36,9 @@ class CustomUserDetailsServiceImplTest {
         client.setEmail(email);
         client.setPassword("pass");
         client.setName("Client Name");
+        client.setBlocked(false);
 
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
-        when(blockedClientRepository.existsByEmail(email)).thenReturn(false);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
@@ -59,9 +56,9 @@ class CustomUserDetailsServiceImplTest {
         client.setEmail(email);
         client.setPassword("pass");
         client.setName("Blocked Name");
+        client.setBlocked(true);
 
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
-        when(blockedClientRepository.existsByEmail(email)).thenReturn(true);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 

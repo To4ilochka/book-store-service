@@ -1,6 +1,7 @@
 package com.epam.rd.autocode.spring.project.security;
 
-import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
+import com.epam.rd.autocode.spring.project.model.enums.Role;
+import com.epam.rd.autocode.spring.project.service.ClientService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,27 +19,34 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class UserBlockingFilter extends OncePerRequestFilter {
-    private final BlockedClientRepository blockedClientRepository;
+    private static final String ROLE_CLIENT = "ROLE_" + Role.CLIENT.name();
+    private final ClientService clientService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth != null && auth.isAuthenticated()) {
+        if (auth != null && auth.isAuthenticated() && isClient(auth)) {
             String email = auth.getName();
 
-            if (blockedClientRepository.existsByEmail(email)) {
-                log.warn("Security Filter: Detected active session for BLOCKED user '{}'. Invalidating session and redirecting.", email);
-
-                SecurityContextHolder.clearContext();
-
-                request.getSession().invalidate();
-
-                response.sendRedirect("/login?blocked");
-                return;
+            try {
+                if (clientService.getClientByEmail(email).isBlocked()) {
+                    log.warn("Security Filter: Detected active session for BLOCKED user '{}'. Invalidating session.", email);
+                    SecurityContextHolder.clearContext();
+                    request.getSession().invalidate();
+                    response.sendRedirect("/login?blocked");
+                    return;
+                }
+            } catch (Exception e) {
+                log.warn("Could not check blocking status for user {}: {}", email, e.getMessage());
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isClient(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(ROLE_CLIENT));
     }
 }

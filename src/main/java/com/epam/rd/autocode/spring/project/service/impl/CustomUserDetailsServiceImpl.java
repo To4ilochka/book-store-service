@@ -3,7 +3,6 @@ package com.epam.rd.autocode.spring.project.service.impl;
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.model.Employee;
 import com.epam.rd.autocode.spring.project.model.enums.Role;
-import com.epam.rd.autocode.spring.project.repo.BlockedClientRepository;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
 import com.epam.rd.autocode.spring.project.security.SecurityUser;
@@ -24,23 +23,22 @@ import java.util.Optional;
 public class CustomUserDetailsServiceImpl implements UserDetailsService {
     private final ClientRepository clientRepository;
     private final EmployeeRepository employeeRepository;
-    private final BlockedClientRepository blockedClientRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.debug("Attempting to load user by username: {}", username);
 
-        Optional<Client> client = clientRepository.findByEmail(username);
-        if (client.isPresent()) {
-            boolean isBlocked = blockedClientRepository.existsByEmail(username);
-            log.info("User found in Client DB: {} (Blocked: {})", username, isBlocked);
+        Optional<Client> clientOpt = clientRepository.findByEmail(username);
+        if (clientOpt.isPresent()) {
+            Client client = clientOpt.get();
+            log.info("User found: {} (Blocked: {})", client.getEmail(), client.isBlocked());
 
             return createSpringUser(
-                    client.get().getEmail(),
-                    client.get().getPassword(),
+                    client.getEmail(),
+                    client.getPassword(),
                     Role.CLIENT,
-                    client.get().getName(),
-                    isBlocked
+                    client.getName(),
+                    client.isBlocked()
             );
         }
 

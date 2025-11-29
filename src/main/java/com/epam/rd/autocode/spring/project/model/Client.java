@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 public class Client extends User {
     @Column(nullable = false)
     private BigDecimal balance =  BigDecimal.ZERO;
+    @Column(name = "is_blocked", nullable = false)
+    private boolean isBlocked = false;
 
     public Client(Long id, String email, String password, String name, BigDecimal balance) {
         super(id, email, password, name);
