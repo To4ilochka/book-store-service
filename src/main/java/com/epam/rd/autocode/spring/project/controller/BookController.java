@@ -25,12 +25,13 @@ public class BookController {
                               @RequestParam(defaultValue = "6") int size,
                               @RequestParam(defaultValue = "id") String sort,
                               @RequestParam(defaultValue = "asc") String dir,
+                              @RequestParam(required = false) String keyword,
                               Model model) {
 
-        log.debug("Fetching books catalog. Page: {}, Sort: {}", page, sort);
+        log.debug("Fetching books catalog. Page: {}, Sort: {}, Keyword: {}", page, sort, keyword);
 
         Sort.Direction direction = dir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Page<BookDTO> bookPage = bookService.getAllBooks(PageRequest.of(page, size, Sort.by(direction, sort)));
+        Page<BookDTO> bookPage = bookService.getAllBooks(PageRequest.of(page, size, Sort.by(direction, sort)), keyword);
 
         model.addAttribute("books", bookPage);
         model.addAttribute("currentPage", page);
@@ -39,6 +40,8 @@ public class BookController {
         model.addAttribute("sortField", sort);
         model.addAttribute("sortDir", dir);
         model.addAttribute("reverseSortDir", dir.equals("asc") ? "desc" : "asc");
+
+        model.addAttribute("keyword", keyword);
 
         return "books/list";
     }

@@ -75,4 +75,18 @@ public class BookServiceImpl implements BookService {
         log.info("Book added successfully with ID: {}", saved.getId());
         return modelMapper.map(saved,  BookDTO.class) ;
     }
+
+    @Override
+    public Page<BookDTO> getAllBooks(Pageable pageable, String keyword) {
+        log.debug("Fetching books page: {}, Keyword: {}", pageable.getPageNumber(), keyword);
+
+        Page<Book> books;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            books = bookRepository.findAllByKeyword(keyword.trim(), pageable);
+        } else {
+            books = bookRepository.findAll(pageable);
+        }
+
+        return books.map(book -> modelMapper.map(book, BookDTO.class));
+    }
 }
