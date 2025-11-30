@@ -59,7 +59,6 @@ class CartServiceImplTest {
 
     @Test
     void addBook_ShouldIncrementQuantity_WhenAlreadyInCart() {
-        // Arrange
         String bookName = "Existing Book";
         itemsMap.put(bookName, 1);
         cacheMap.put(bookName, new BookDTO());

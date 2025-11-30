@@ -1,9 +1,7 @@
 package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.ClientDTO;
-import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.service.ClientService;
-import com.epam.rd.autocode.spring.project.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class HomeController {
     private final ClientService clientService;
-    private final EmployeeService employeeService;
 
     @GetMapping
     public String home() {
@@ -43,7 +40,6 @@ public class HomeController {
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute("user") ClientDTO clientDTO,
                            BindingResult bindingResult,
-                           Model model,
                            RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
@@ -51,22 +47,11 @@ public class HomeController {
             return "auth/register";
         }
 
-        if (employeeService.employeeExists(clientDTO.getEmail())) {
-            log.warn("Registration failed: Email '{}' already exists in Employee DB", clientDTO.getEmail());
-            model.addAttribute("errorMessage", "User with this email already exists");
-            return "auth/register";
-        }
+        clientService.addClient(clientDTO);
 
-        try {
-            clientService.addClient(clientDTO);
-            log.info("New client registered successfully: {}", clientDTO.getEmail());
-        } catch (AlreadyExistException e) {
-            log.warn("Registration failed: Email '{}' already exists in Client DB", clientDTO.getEmail());
-            model.addAttribute("errorMessage", "User with this email already exists");
-            return "auth/register";
-        }
-
+        log.info("New client registered successfully: {}", clientDTO.getEmail());
         redirectAttributes.addFlashAttribute("successMessage", "Registration successful! Please sign in.");
+
         return "redirect:/login";
     }
 }

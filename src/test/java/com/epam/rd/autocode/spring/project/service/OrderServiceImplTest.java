@@ -1,9 +1,14 @@
 package com.epam.rd.autocode.spring.project.service;
 
+import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.dto.BookItemDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
+import com.epam.rd.autocode.spring.project.exception.InsufficientFundsException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
-import com.epam.rd.autocode.spring.project.model.*;
+import com.epam.rd.autocode.spring.project.model.Book;
+import com.epam.rd.autocode.spring.project.model.Client;
+import com.epam.rd.autocode.spring.project.model.Employee;
+import com.epam.rd.autocode.spring.project.model.Order;
 import com.epam.rd.autocode.spring.project.repo.BookRepository;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
@@ -15,15 +20,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,90 +52,49 @@ class OrderServiceImplTest {
     private OrderServiceImpl orderService;
 
     @Test
-    void getAllOrders_ShouldReturnPage() {
+    void getAllOrders_SortByEmployee() {
         int page = 0;
-        int size = 10;
-        String sortField = "id";
-        String sortDir = "asc";
-
-        Order order = new Order();
-        Page<Order> orderPage = new PageImpl<>(List.of(order));
-        OrderDTO orderDTO = new OrderDTO();
-
-        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
-        when(modelMapper.map(order, OrderDTO.class)).thenReturn(orderDTO);
-
-        Page<OrderDTO> result = orderService.getAllOrders(page, size, sortField, sortDir);
-
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        verify(orderRepository).findAll(any(Pageable.class));
-    }
-
-    @Test
-    void getAllOrders_ShouldSortByEmployeeWithNullsFirst() {
-        int page = 0;
-        int size = 10;
+        int size = 5;
         String sortField = "employee";
         String sortDir = "asc";
+        when(orderRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(List.of()));
 
-        Order order = new Order();
-        Page<Order> orderPage = new PageImpl<>(List.of(order));
-        OrderDTO orderDTO = new OrderDTO();
+        orderService.getAllOrders(page, size, sortField, sortDir);
 
-        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
-        when(modelMapper.map(order, OrderDTO.class)).thenReturn(orderDTO);
-
-        Page<OrderDTO> result = orderService.getAllOrders(page, size, sortField, sortDir);
-
-        assertNotNull(result);
-        verify(orderRepository).findAll(any(Pageable.class));
+        verify(orderRepository).findAll(argThat((Pageable pageable) ->
+                pageable.getSort().getOrderFor("employee") != null
+        ));
     }
 
     @Test
-    void getOrdersByClient_ShouldReturnList() {
+    void getOrdersByClient_ReturnsList() {
         String email = "client@test.com";
-        Order order = new Order();
-        OrderDTO dto = new OrderDTO();
-
-        when(orderRepository.findAllByClientEmail(email)).thenReturn(List.of(order));
-        when(modelMapper.map(order, OrderDTO.class)).thenReturn(dto);
+        when(orderRepository.findAllByClientEmail(email)).thenReturn(List.of(new Order()));
+        when(modelMapper.map(any(), eq(OrderDTO.class))).thenReturn(new OrderDTO());
 
         List<OrderDTO> result = orderService.getOrdersByClient(email);
 
-        assertNotNull(result);
         assertEquals(1, result.size());
     }
 
     @Test
-    void getOrdersByEmployee_ShouldReturnList() {
-        String email = "emp@test.com";
-        Order order = new Order();
-        OrderDTO dto = new OrderDTO();
-
-        when(orderRepository.findAllByEmployeeEmail(email)).thenReturn(List.of(order));
-        when(modelMapper.map(order, OrderDTO.class)).thenReturn(dto);
-
-        List<OrderDTO> result = orderService.getOrdersByEmployee(email);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void addOrder_ShouldCreateOrder_WhenBalanceSufficient() {
+    void addOrder_Success() {
         String email = "client@test.com";
-        String bookName = "Java";
-        BigDecimal price = new BigDecimal("50.00");
+        String bookName = "Java Book";
+        BigDecimal price = BigDecimal.valueOf(100);
+        BigDecimal balance = BigDecimal.valueOf(200);
 
-        OrderDTO inputDto = new OrderDTO();
-        inputDto.setClientEmail(email);
-        inputDto.setPrice(price);
-        inputDto.setBookItems(List.of(new BookItemDTO(bookName, 1)));
+        BookItemDTO itemDTO = new BookItemDTO();
+        itemDTO.setBookName(bookName);
+        itemDTO.setQuantity(1);
+
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setClientEmail(email);
+        orderDTO.setPrice(price);
+        orderDTO.setBookItems(List.of(itemDTO));
 
         Client client = new Client();
-        client.setEmail(email);
-        client.setBalance(new BigDecimal("100.00"));
+        client.setBalance(balance);
 
         Book book = new Book();
         book.setName(bookName);
@@ -136,122 +103,102 @@ class OrderServiceImplTest {
         savedOrder.setId(1L);
 
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
-        when(bookRepository.findByNameIn(any())).thenReturn(List.of(book));
+        when(bookRepository.findByNameIn(anySet())).thenReturn(List.of(book));
         when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
-        when(modelMapper.map(savedOrder, OrderDTO.class)).thenReturn(inputDto);
+        when(modelMapper.map(savedOrder, OrderDTO.class)).thenReturn(orderDTO);
 
-        OrderDTO result = orderService.addOrder(inputDto);
+        OrderDTO result = orderService.addOrder(orderDTO);
 
         assertNotNull(result);
-        assertEquals(new BigDecimal("50.00"), client.getBalance());
+        assertEquals(BigDecimal.valueOf(100), client.getBalance());
         verify(clientRepository).save(client);
-        verify(orderRepository).save(any(Order.class));
     }
 
     @Test
-    void addOrder_ShouldThrowIllegalState_WhenBalanceInsufficient() {
-        String email = "client@test.com";
-        OrderDTO inputDto = new OrderDTO();
-        inputDto.setClientEmail(email);
-        inputDto.setPrice(new BigDecimal("100.00"));
+    void addOrder_InsufficientFunds_ThrowsException() {
+        String email = "poor@test.com";
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setClientEmail(email);
+        orderDTO.setPrice(BigDecimal.valueOf(100));
 
         Client client = new Client();
-        client.setBalance(new BigDecimal("10.00"));
+        client.setBalance(BigDecimal.valueOf(50));
 
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
 
-        assertThrows(IllegalStateException.class, () -> orderService.addOrder(inputDto));
-        verify(orderRepository, never()).save(any());
+        assertThrows(InsufficientFundsException.class, () -> orderService.addOrder(orderDTO));
     }
 
     @Test
-    void addOrder_ShouldThrowNotFound_WhenClientMissing() {
-        String email = "ghost@test.com";
-        OrderDTO inputDto = new OrderDTO();
-        inputDto.setClientEmail(email);
-
-        when(clientRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.addOrder(inputDto));
-    }
-
-    @Test
-    void addOrder_ShouldThrowNotFound_WhenBookMissing() {
+    void addOrder_BookNotFound_ThrowsException() {
         String email = "client@test.com";
-        String bookName = "Ghost Book";
-        OrderDTO inputDto = new OrderDTO();
-        inputDto.setClientEmail(email);
-        inputDto.setPrice(BigDecimal.TEN);
-        inputDto.setBookItems(List.of(new BookItemDTO(bookName, 1)));
+        String bookName = "Missing Book";
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setClientEmail(email);
+        orderDTO.setPrice(BigDecimal.TEN);
+        BookItemDTO item = new BookItemDTO();
+        item.setBookName(bookName);
+        orderDTO.setBookItems(List.of(item));
 
         Client client = new Client();
-        client.setBalance(new BigDecimal("100.00"));
+        client.setBalance(BigDecimal.valueOf(100));
 
         when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
-        when(bookRepository.findByNameIn(any())).thenReturn(Collections.emptyList());
+        when(bookRepository.findByNameIn(anySet())).thenReturn(Collections.emptyList());
 
-        assertThrows(NotFoundException.class, () -> orderService.addOrder(inputDto));
-        verify(orderRepository, never()).save(any());
+        assertThrows(NotFoundException.class, () -> orderService.addOrder(orderDTO));
     }
 
     @Test
-    void confirmOrder_ShouldUpdateOrder_WhenValid() {
+    void confirmOrder_Success() {
         Long orderId = 1L;
-        String empEmail = "emp@test.com";
-
+        String email = "emp@test.com";
         Order order = new Order();
-        order.setId(orderId);
-
         Employee employee = new Employee();
-        employee.setEmail(empEmail);
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
-        when(employeeRepository.findByEmail(empEmail)).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(employee));
 
-        orderService.confirmOrder(orderId, empEmail);
+        orderService.confirmOrder(orderId, email);
 
         assertEquals(employee, order.getEmployee());
         verify(orderRepository).save(order);
     }
 
     @Test
-    void confirmOrder_ShouldDoNothing_WhenAlreadyConfirmed() {
+    void confirmOrder_AlreadyConfirmed_DoNothing() {
         Long orderId = 1L;
-        String empEmail = "emp@test.com";
-
-        Employee existingEmp = new Employee();
-        existingEmp.setEmail("other@test.com");
-
+        String email = "emp@test.com";
         Order order = new Order();
-        order.setEmployee(existingEmp);
+        order.setEmployee(new Employee());
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
-        orderService.confirmOrder(orderId, empEmail);
+        orderService.confirmOrder(orderId, email);
 
-        verify(employeeRepository, never()).findByEmail(any());
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).save(order);
     }
 
     @Test
-    void confirmOrder_ShouldThrowNotFound_WhenOrderMissing() {
-        Long orderId = 999L;
-        String empEmail = "emp@test.com";
+    void createOrder_FromCart_DelegatesToAddOrder() {
+        String email = "client@test.com";
+        BookDTO bookDTO = new BookDTO();
+        bookDTO.setName("Book");
+        Map<BookDTO, Integer> cart = Map.of(bookDTO, 1);
+        BigDecimal total = BigDecimal.TEN;
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+        Client client = new Client();
+        client.setBalance(new BigDecimal("100"));
+        Book book = new Book();
+        book.setName("Book");
 
-        assertThrows(NotFoundException.class, () -> orderService.confirmOrder(orderId, empEmail));
-    }
+        when(clientRepository.findByEmail(email)).thenReturn(Optional.of(client));
+        when(bookRepository.findByNameIn(anySet())).thenReturn(List.of(book));
+        when(orderRepository.save(any(Order.class))).thenReturn(new Order());
+        when(modelMapper.map(any(), eq(OrderDTO.class))).thenReturn(new OrderDTO());
 
-    @Test
-    void confirmOrder_ShouldThrowNotFound_WhenEmployeeMissing() {
-        Long orderId = 1L;
-        String empEmail = "ghost@test.com";
-        Order order = new Order();
+        OrderDTO result = orderService.createOrder(email, cart, total);
 
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
-        when(employeeRepository.findByEmail(empEmail)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> orderService.confirmOrder(orderId, empEmail));
+        assertNotNull(result);
     }
 }

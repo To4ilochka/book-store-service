@@ -1,9 +1,12 @@
 package com.epam.rd.autocode.spring.project.service;
 
+import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
 import org.springframework.data.domain.Page;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface OrderService {
 
@@ -16,4 +19,6 @@ public interface OrderService {
     OrderDTO addOrder(OrderDTO order);
 
     void confirmOrder(Long orderId, String employeeEmail);
+
+    OrderDTO createOrder(String clientEmail, Map<BookDTO, Integer> cartItems, BigDecimal totalPrice);
 }

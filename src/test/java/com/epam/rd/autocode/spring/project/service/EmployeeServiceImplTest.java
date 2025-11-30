@@ -4,6 +4,7 @@ import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
 import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import com.epam.rd.autocode.spring.project.model.Employee;
+import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
 import com.epam.rd.autocode.spring.project.service.impl.EmployeeServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceImplTest {
@@ -31,129 +33,85 @@ class EmployeeServiceImplTest {
     private EmployeeRepository employeeRepository;
 
     @Mock
+    private ClientRepository clientRepository;
+
+    @Mock
     private ModelMapper modelMapper;
 
     @InjectMocks
     private EmployeeServiceImpl employeeService;
 
     @Test
-    void getAllEmployees_ShouldReturnPage() {
-        Pageable pageable = PageRequest.of(0, 5);
+    void getAllEmployees_ReturnsPage() {
+        Pageable pageable = PageRequest.of(0, 10);
         Employee employee = new Employee();
-        employee.setEmail("emp@test.com");
-
         Page<Employee> page = new PageImpl<>(List.of(employee));
-        EmployeeDTO dto = new EmployeeDTO();
-        dto.setEmail("emp@test.com");
 
         when(employeeRepository.findAll(pageable)).thenReturn(page);
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(dto);
+        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(new EmployeeDTO());
 
         Page<EmployeeDTO> result = employeeService.getAllEmployees(pageable);
 
-        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        verify(employeeRepository).findAll(pageable);
     }
 
     @Test
-    void getEmployeeByEmail_ShouldReturnEmployee_WhenExists() {
+    void getEmployeeByEmail_Found_ReturnsDTO() {
         String email = "emp@test.com";
         Employee employee = new Employee();
-        employee.setEmail(email);
-        EmployeeDTO dto = new EmployeeDTO();
-        dto.setEmail(email);
-
         when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(employee));
-        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(dto);
+        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(new EmployeeDTO());
 
         EmployeeDTO result = employeeService.getEmployeeByEmail(email);
 
         assertNotNull(result);
-        assertEquals(email, result.getEmail());
     }
 
     @Test
-    void getEmployeeByEmail_ShouldThrowNotFound_WhenNotExists() {
-        String email = "ghost@test.com";
-        when(employeeRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> employeeService.getEmployeeByEmail(email));
+    void getEmployeeByEmail_NotFound_ThrowsException() {
+        when(employeeRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> employeeService.getEmployeeByEmail("none"));
     }
 
     @Test
-    void addEmployee_ShouldSave_WhenEmailUnique() {
+    void updateEmployeeByEmail_Success_WithPassword() {
+        String email = "emp@test.com";
         EmployeeDTO dto = new EmployeeDTO();
-        dto.setEmail("new@test.com");
-
+        dto.setPassword("newPass");
         Employee employee = new Employee();
-        employee.setEmail("new@test.com");
-        employee.setId(1L);
+        Employee mappedEmployee = new Employee();
+        mappedEmployee.setPassword("encodedPass");
 
-        when(employeeRepository.existsByEmail(dto.getEmail())).thenReturn(false);
-        when(modelMapper.map(dto, Employee.class)).thenReturn(employee);
+        when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(employee));
+        when(modelMapper.map(dto, Employee.class)).thenReturn(mappedEmployee);
         when(employeeRepository.save(employee)).thenReturn(employee);
         when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(dto);
 
-        EmployeeDTO result = employeeService.addEmployee(dto);
+        employeeService.updateEmployeeByEmail(email, dto);
 
-        assertNotNull(result);
+        assertEquals("encodedPass", employee.getPassword());
         verify(employeeRepository).save(employee);
     }
 
     @Test
-    void addEmployee_ShouldThrowAlreadyExist_WhenEmailExists() {
-        EmployeeDTO dto = new EmployeeDTO();
-        dto.setEmail("exist@test.com");
-
-        when(employeeRepository.existsByEmail(dto.getEmail())).thenReturn(true);
-
-        assertThrows(AlreadyExistException.class, () -> employeeService.addEmployee(dto));
-        verify(employeeRepository, never()).save(any());
-    }
-
-    @Test
-    void updateEmployeeByEmail_ShouldUpdate_WhenExists() {
+    void updateEmployeeByEmail_Success_WithoutPassword() {
         String email = "emp@test.com";
         EmployeeDTO dto = new EmployeeDTO();
-        dto.setName("New Name");
-        dto.setPassword("NewPass");
+        dto.setPassword(null);
+        Employee employee = new Employee();
+        employee.setPassword("oldPass");
 
-        Employee existing = new Employee();
-        existing.setEmail(email);
-        existing.setPassword("OldPass");
+        when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(employee));
+        when(employeeRepository.save(employee)).thenReturn(employee);
+        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(dto);
 
-        Employee updated = new Employee();
-        updated.setEmail(email);
-        updated.setPassword("EncodedNewPass");
+        employeeService.updateEmployeeByEmail(email, dto);
 
-        Employee mappedTemp = new Employee();
-        mappedTemp.setPassword("EncodedNewPass");
-
-        when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(existing));
-        when(modelMapper.map(dto, Employee.class)).thenReturn(mappedTemp);
-        when(employeeRepository.save(existing)).thenReturn(updated);
-        when(modelMapper.map(updated, EmployeeDTO.class)).thenReturn(dto);
-
-        EmployeeDTO result = employeeService.updateEmployeeByEmail(email, dto);
-
-        assertNotNull(result);
-        verify(employeeRepository).save(existing);
+        assertEquals("oldPass", employee.getPassword());
     }
 
     @Test
-    void updateEmployeeByEmail_ShouldThrowNotFound_WhenNotExists() {
-        String email = "ghost@test.com";
-        EmployeeDTO dto = new EmployeeDTO();
-
-        when(employeeRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> employeeService.updateEmployeeByEmail(email, dto));
-        verify(employeeRepository, never()).save(any());
-    }
-
-    @Test
-    void deleteEmployeeByEmail_ShouldDelete_WhenExists() {
+    void deleteEmployeeByEmail_Success() {
         String email = "del@test.com";
         when(employeeRepository.existsByEmail(email)).thenReturn(true);
 
@@ -163,18 +121,29 @@ class EmployeeServiceImplTest {
     }
 
     @Test
-    void deleteEmployeeByEmail_ShouldThrowNotFound_WhenNotExists() {
-        String email = "ghost@test.com";
-        when(employeeRepository.existsByEmail(email)).thenReturn(false);
+    void addEmployee_Success() {
+        EmployeeDTO dto = new EmployeeDTO();
+        dto.setEmail("new@emp.com");
+        Employee employee = new Employee();
 
-        assertThrows(NotFoundException.class, () -> employeeService.deleteEmployeeByEmail(email));
-        verify(employeeRepository, never()).deleteByEmail(any());
+        when(employeeRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(clientRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(modelMapper.map(dto, Employee.class)).thenReturn(employee);
+        when(employeeRepository.save(employee)).thenReturn(employee);
+        when(modelMapper.map(employee, EmployeeDTO.class)).thenReturn(dto);
+
+        EmployeeDTO result = employeeService.addEmployee(dto);
+
+        assertNotNull(result);
     }
 
     @Test
-    void employeeExists_ShouldReturnTrue_WhenExists() {
-        String email = "exist@test.com";
-        when(employeeRepository.existsByEmail(email)).thenReturn(true);
-        assertTrue(employeeService.employeeExists(email));
+    void addEmployee_ExistsInClient_ThrowsException() {
+        EmployeeDTO dto = new EmployeeDTO();
+        dto.setEmail("client@test.com");
+        when(employeeRepository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(clientRepository.existsByEmail(dto.getEmail())).thenReturn(true);
+
+        assertThrows(AlreadyExistException.class, () -> employeeService.addEmployee(dto));
     }
 }

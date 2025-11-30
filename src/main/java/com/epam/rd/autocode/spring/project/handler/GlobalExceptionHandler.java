@@ -1,5 +1,10 @@
 package com.epam.rd.autocode.spring.project.handler;
 
+import com.epam.rd.autocode.spring.project.dto.BookDTO;
+import com.epam.rd.autocode.spring.project.dto.ClientDTO;
+import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
+import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
+import com.epam.rd.autocode.spring.project.exception.InsufficientFundsException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +28,40 @@ public class GlobalExceptionHandler {
         log.error("CRITICAL ERROR at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
         model.addAttribute("errorMessage", "An unexpected error occurred: " + ex.getMessage());
         return "error/error";
+    }
+
+    @ExceptionHandler(AlreadyExistException.class)
+    public String handleAlreadyExistException(AlreadyExistException e,
+                                              Model model,
+                                              HttpServletRequest request) {
+
+        model.addAttribute("errorMessage", e.getMessage());
+
+        String uri = request.getRequestURI();
+
+        if (uri.contains("/register")) {
+            model.addAttribute("user", new ClientDTO());
+            return "auth/register";
+        }
+
+        if (uri.contains("/employees/add")) {
+            model.addAttribute("employee", new EmployeeDTO());
+            return "employee/add";
+        }
+
+        if (uri.contains("/books/add")) {
+            model.addAttribute("book", new BookDTO());
+            return "books/add";
+        }
+
+        return "error/error";
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public String handleInsufficientFunds(InsufficientFundsException e, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+
+        return "redirect:/cart";
     }
 
     @ExceptionHandler(AccessDeniedException.class)

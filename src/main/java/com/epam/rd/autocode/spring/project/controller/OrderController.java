@@ -5,13 +5,11 @@ import com.epam.rd.autocode.spring.project.dto.BookItemDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
 import com.epam.rd.autocode.spring.project.service.CartService;
 import com.epam.rd.autocode.spring.project.service.OrderService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -57,30 +55,15 @@ public class OrderController {
 
         if (cartDetails.isEmpty()) {
             log.warn("User '{}' attempted to create an order with an empty cart", email);
+            redirectAttributes.addFlashAttribute("errorMessage", "Your cart is empty!");
             return "redirect:/books";
         }
 
-        try {
-            OrderDTO orderDTO = new OrderDTO();
-            orderDTO.setClientEmail(email);
-            orderDTO.setPrice(cartService.getTotalPrice());
-            orderDTO.setOrderDate(LocalDateTime.now());
+        orderService.createOrder(email, cartDetails, cartService.getTotalPrice());
 
-            List<BookItemDTO> bookItems = cartDetails.entrySet().stream()
-                    .map(entry -> new BookItemDTO(entry.getKey().getName(), entry.getValue()))
-                    .toList();
+        cartService.clearCart();
 
-            orderDTO.setBookItems(bookItems);
-
-            orderService.addOrder(orderDTO);
-            cartService.clearCart();
-
-            log.info("Order successfully created for user '{}'. Total items: {}", email, bookItems.size());
-        } catch (IllegalStateException e) {
-            log.error("Failed to create order for user '{}': {}", email, e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/cart";
-        }
+        log.info("Order successfully created for user '{}'", email);
         return "redirect:/orders/my";
     }
 

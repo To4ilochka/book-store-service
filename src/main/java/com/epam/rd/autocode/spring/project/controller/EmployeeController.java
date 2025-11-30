@@ -1,8 +1,6 @@
 package com.epam.rd.autocode.spring.project.controller;
 
 import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
-import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
-import com.epam.rd.autocode.spring.project.service.ClientService;
 import com.epam.rd.autocode.spring.project.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 
@@ -24,7 +23,6 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class EmployeeController {
     private final EmployeeService employeeService;
-    private final ClientService clientService;
 
     @GetMapping
     public String getAllEmployees(@RequestParam(defaultValue = "0") int page,
@@ -53,24 +51,16 @@ public class EmployeeController {
 
     @PostMapping("/add")
     public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employeeDTO,
-                              BindingResult bindingResult) {
+                              BindingResult bindingResult,
+                              RedirectAttributes redirectAttributes) {
+
         if (bindingResult.hasErrors()) {
             return "employee/add";
         }
 
-        if (clientService.clientExists(employeeDTO.getEmail())) {
-            bindingResult.rejectValue("email", "error.employee", "Email is already registered as a Client");
-            return "employee/add";
-        }
+        employeeService.addEmployee(employeeDTO);
 
-        try {
-            employeeService.addEmployee(employeeDTO);
-            log.info("New employee registered: {}", employeeDTO.getEmail());
-        } catch (AlreadyExistException e) {
-            bindingResult.rejectValue("email", "error.employee", "Email already exists in Employee DB");
-            return "employee/add";
-        }
-
+        redirectAttributes.addFlashAttribute("successMessage", "Employee added successfully");
         return "redirect:/employees";
     }
 

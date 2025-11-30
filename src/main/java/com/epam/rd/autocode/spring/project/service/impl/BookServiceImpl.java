@@ -10,12 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collection;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -80,7 +79,13 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public Page<BookDTO> getAllBooks(Pageable pageable, String keyword) {
+    public Page<BookDTO> getAllBooks(int page, int size, String sort, String direction, String keyword) {
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+
         log.debug("Fetching books page: {}, Keyword: {}", pageable.getPageNumber(), keyword);
 
         Page<Book> books;

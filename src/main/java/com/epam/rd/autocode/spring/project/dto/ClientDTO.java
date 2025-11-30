@@ -15,7 +15,7 @@ public class ClientDTO {
     @Email(message = "Invalid email format")
     private String email;
     @NotBlank(message = "Password cannot be empty")
-    @Size(min = 4, message = "Password must be at least 4 characters") // Упростил для учебного проекта
+    @Size(min = 4, message = "Password must be at least 4 characters")
     private String password;
     @NotBlank(message = "Name cannot be empty")
     private String name;

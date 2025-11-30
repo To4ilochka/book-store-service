@@ -4,6 +4,7 @@ import com.epam.rd.autocode.spring.project.dto.EmployeeDTO;
 import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import com.epam.rd.autocode.spring.project.model.Employee;
+import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
 import com.epam.rd.autocode.spring.project.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
+    private final ClientRepository clientRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -79,19 +81,18 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     @Override
     public EmployeeDTO addEmployee(EmployeeDTO employeeDTO) {
-        log.info("Adding new employee: {}", employeeDTO.getEmail());
+        log.debug("Attempting to register employee: {}", employeeDTO.getEmail());
 
-        if (employeeRepository.existsByEmail(employeeDTO.getEmail())) {
-            log.error("Employee creation failed. Email already exists: {}", employeeDTO.getEmail());
-            throw new AlreadyExistException("Employee with email " + employeeDTO.getEmail() + " already exists");
+        if (employeeRepository.existsByEmail(employeeDTO.getEmail())
+                || clientRepository.existsByEmail(employeeDTO.getEmail())) {
+
+            log.warn("Registration failed. Email {} is already taken", employeeDTO.getEmail());
+            throw new AlreadyExistException("User with this email already exists");
         }
 
-        Employee employee = modelMapper.map(employeeDTO, Employee.class);
-
-        Employee savedEmployee = employeeRepository.save(employee);
-        log.info("New employee added successfully with ID: {}", savedEmployee.getId());
-
-        return modelMapper.map(savedEmployee, EmployeeDTO.class);
+        Employee saved = employeeRepository.save(modelMapper.map(employeeDTO, Employee.class));
+        log.info("New employee registered: {}", saved.getEmail());
+        return modelMapper.map(saved, EmployeeDTO.class);
     }
 
     public boolean employeeExists(String email) {

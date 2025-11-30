@@ -25,6 +25,4 @@ public interface ClientService {
     List<String> getBlockedEmails();
 
     void topUpBalance(String email, BigDecimal amount);
-
-    boolean clientExists(String email);
 }

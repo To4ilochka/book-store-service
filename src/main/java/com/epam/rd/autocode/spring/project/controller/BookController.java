@@ -6,8 +6,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,8 +28,7 @@ public class BookController {
 
         log.debug("Fetching books catalog. Page: {}, Sort: {}, Keyword: {}", page, sort, keyword);
 
-        Sort.Direction direction = dir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Page<BookDTO> bookPage = bookService.getAllBooks(PageRequest.of(page, size, Sort.by(direction, sort)), keyword);
+        Page<BookDTO> bookPage = bookService.getAllBooks(page, size, sort, dir, keyword);
 
         model.addAttribute("books", bookPage);
         model.addAttribute("currentPage", page);
@@ -40,7 +37,6 @@ public class BookController {
         model.addAttribute("sortField", sort);
         model.addAttribute("sortDir", dir);
         model.addAttribute("reverseSortDir", dir.equals("asc") ? "desc" : "asc");
-
         model.addAttribute("keyword", keyword);
 
         return "books/list";

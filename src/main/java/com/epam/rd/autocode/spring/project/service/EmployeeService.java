@@ -15,6 +15,4 @@ public interface EmployeeService {
     void deleteEmployeeByEmail(String email);
 
     EmployeeDTO addEmployee(EmployeeDTO employee);
-
-    boolean employeeExists(String email);
 }

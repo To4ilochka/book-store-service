@@ -5,6 +5,7 @@ import com.epam.rd.autocode.spring.project.exception.AlreadyExistException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
+import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
 import com.epam.rd.autocode.spring.project.service.ClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClientServiceImpl implements ClientService {
     private final ClientRepository clientRepository;
+    private final EmployeeRepository employeeRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -74,13 +76,16 @@ public class ClientServiceImpl implements ClientService {
 
     @Transactional
     @Override
-    public ClientDTO addClient(ClientDTO client) {
-        log.info("Registering new client: {}", client.getEmail());
-        if (clientRepository.existsByEmail(client.getEmail())) {
-            log.error("Registration failed. Email exists: {}", client.getEmail());
-            throw new AlreadyExistException("User with email '" + client.getEmail() + "' already exists");
+    public ClientDTO addClient(ClientDTO clientDTO) {
+        log.debug("Attempting to register client: {}", clientDTO.getEmail());
+
+        if (clientRepository.existsByEmail(clientDTO.getEmail())
+                || employeeRepository.existsByEmail(clientDTO.getEmail())) {
+            log.warn("Registration failed. User with email {} already exists", clientDTO.getEmail());
+            throw new AlreadyExistException("User with this email already exists");
         }
-        Client saved = clientRepository.save(modelMapper.map(client, Client.class));
+
+        Client saved = clientRepository.save(modelMapper.map(clientDTO, Client.class));
         log.info("Client registered successfully: {}", saved.getEmail());
         return modelMapper.map(saved, ClientDTO.class);
     }
@@ -130,10 +135,5 @@ public class ClientServiceImpl implements ClientService {
         client.setBalance(client.getBalance().add(amount));
         clientRepository.save(client);
         log.info("Balance updated for '{}'. New balance: {}", email, client.getBalance());
-    }
-
-    @Override
-    public boolean clientExists(String email) {
-        return clientRepository.existsByEmail(email);
     }
 }

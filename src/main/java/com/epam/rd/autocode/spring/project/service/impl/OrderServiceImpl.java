@@ -1,7 +1,9 @@
 package com.epam.rd.autocode.spring.project.service.impl;
 
+import com.epam.rd.autocode.spring.project.dto.BookDTO;
 import com.epam.rd.autocode.spring.project.dto.BookItemDTO;
 import com.epam.rd.autocode.spring.project.dto.OrderDTO;
+import com.epam.rd.autocode.spring.project.exception.InsufficientFundsException;
 import com.epam.rd.autocode.spring.project.exception.NotFoundException;
 import com.epam.rd.autocode.spring.project.model.*;
 import com.epam.rd.autocode.spring.project.repo.BookRepository;
@@ -18,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
         if (client.getBalance().compareTo(orderDTO.getPrice()) < 0) {
             log.warn("Order failed: Insufficient funds. Client: {}, Balance: {}, Required: {}",
                     email, client.getBalance(), orderDTO.getPrice());
-            throw new IllegalStateException("Not enough funds! Your balance: " + client.getBalance() + " $, Order total: " + orderDTO.getPrice() + " $");
+            throw new InsufficientFundsException("Not enough funds! Your balance: " + client.getBalance() + " $, Order total: " + orderDTO.getPrice() + " $");
         }
 
         client.setBalance(client.getBalance().subtract(orderDTO.getPrice()));
@@ -150,5 +153,22 @@ public class OrderServiceImpl implements OrderService {
         order.setEmployee(employee);
         orderRepository.save(order);
         log.info("Order #{} confirmed successfully", orderId);
+    }
+
+    @Override
+    @Transactional
+    public OrderDTO createOrder(String clientEmail, Map<BookDTO, Integer> cartItems, BigDecimal totalPrice) {
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setClientEmail(clientEmail);
+        orderDTO.setPrice(totalPrice);
+        orderDTO.setOrderDate(LocalDateTime.now());
+
+        List<BookItemDTO> bookItems = cartItems.entrySet().stream()
+                .map(entry -> new BookItemDTO(entry.getKey().getName(), entry.getValue()))
+                .toList();
+
+        orderDTO.setBookItems(bookItems);
+
+        return addOrder(orderDTO);
     }
 }
