@@ -20,6 +20,4 @@ public interface BookService {
     BookDTO addBook(BookDTO book);
 
     Page<BookDTO> getAllBooks(Pageable pageable, String keyword);
-
-    List<BookDTO> getBooksByNames(Collection<String> names);
 }
