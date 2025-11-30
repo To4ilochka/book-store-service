@@ -12,8 +12,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 
 @Slf4j
@@ -105,7 +109,7 @@ public class ClientController {
     }
 
     @PostMapping("/client/topup")
-    public String topUpBalance(@RequestParam("amount") java.math.BigDecimal amount,
+    public String topUpBalance(@RequestParam("amount") BigDecimal amount,
                                Principal principal) {
         log.info("Client '{}' topped up balance by {}", principal.getName(), amount);
         clientService.topUpBalance(principal.getName(), amount);

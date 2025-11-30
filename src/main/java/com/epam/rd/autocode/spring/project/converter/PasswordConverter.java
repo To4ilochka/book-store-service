@@ -22,7 +22,6 @@ public class PasswordConverter implements Converter<String, String> {
             return null;
         }
 
-        // SECURITY NOTE: Никогда не логуем значение rawPassword!
         log.debug("Encoding password during DTO->Entity mapping");
 
         return passwordEncoder.encode(rawPassword);

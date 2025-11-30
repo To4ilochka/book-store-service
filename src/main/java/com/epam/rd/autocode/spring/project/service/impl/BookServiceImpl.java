@@ -14,6 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -88,5 +91,15 @@ public class BookServiceImpl implements BookService {
         }
 
         return books.map(book -> modelMapper.map(book, BookDTO.class));
+    }
+
+    @Override
+    public List<BookDTO> getBooksByNames(Collection<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of();
+        }
+        return bookRepository.findByNameIn(names).stream()
+                .map(book -> modelMapper.map(book, BookDTO.class))
+                .toList();
     }
 }

@@ -1,15 +1,13 @@
-package com.epam.rd.autocode.spring.project.service.impl;
+package com.epam.rd.autocode.spring.project.security;
 
 import com.epam.rd.autocode.spring.project.model.Client;
 import com.epam.rd.autocode.spring.project.model.Employee;
 import com.epam.rd.autocode.spring.project.model.enums.Role;
 import com.epam.rd.autocode.spring.project.repo.ClientRepository;
 import com.epam.rd.autocode.spring.project.repo.EmployeeRepository;
-import com.epam.rd.autocode.spring.project.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
     private final EmployeeRepository employeeRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public SecurityUser loadUserByUsername(String username) throws UsernameNotFoundException {
         log.debug("Attempting to load user by username: {}", username);
 
         Optional<Client> clientOpt = clientRepository.findByEmail(username);
@@ -58,7 +56,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService {
         throw new UsernameNotFoundException("User not found with email: " + username);
     }
 
-    private UserDetails createSpringUser(String email, String password, Role role, String name, boolean isBlocked) {
+    private SecurityUser createSpringUser(String email, String password, Role role, String name, boolean isBlocked) {
         return new SecurityUser(
                 email,
                 password,
